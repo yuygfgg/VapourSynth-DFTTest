@@ -22,6 +22,23 @@
 
 #ifndef INSTRSET_H
 #define INSTRSET_H 20102
+#if __arm64
+#include "sse2neon.h"
+
+// limit to 128byte, since we want to use ARM-neon
+#define MAX_VECTOR_SIZE 128
+
+//limit to sse4.2, sse2neon does not have any AVX instructions ( so far )
+#define INSTRSET 6
+
+//define unknown function
+#define _mm_getcsr() 1
+
+//simulate header included
+#define __X86INTRIN_H
+#endif
+// finally include vectorclass
+#include "vectorclass.h"
 
 
 // Allow the use of floating point permute instructions on integer vectors.

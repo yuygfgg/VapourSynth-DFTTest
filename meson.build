@@ -24,9 +24,23 @@ int main() {
     return 0;
 }
 '''
-if not cxx.links(test_fftwf_threads, dependencies: fftw3f_dep)
-  deps += cxx.find_library('fftw3f_threads')
+
+# Try finding fftw3f_threads library
+fftw3f_threads_dep = cxx.find_library('fftw3f_threads', required: false)
+
+# Check if it's macOS and library wasn't found
+if not fftw3f_threads_dep.found() and host_machine.system() == 'darwin'
+  message('fftw3f_threads not found in default locations, trying Homebrew directory.')
+  fftw3f_threads_dep = cxx.find_library('fftw3f_threads', dirs: ['/opt/homebrew/lib'])
 endif
+
+if fftw3f_threads_dep.found()
+  message('fftw3f_threads library found.')
+else
+  error('fftw3f_threads library not found.')
+endif
+
+deps += fftw3f_threads_dep
 
 libs = []
 
