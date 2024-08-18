@@ -1,4 +1,4 @@
-#ifdef DFTTEST_X86
+#if defined(DFTTEST_X86) || defined(__arm__) || defined(__aarch64__)
 #include "DFTTest.h"
 
 #include "VCL2/vectormath_exp.h"

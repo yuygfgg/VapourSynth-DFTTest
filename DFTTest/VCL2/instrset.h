@@ -37,8 +37,6 @@
 //simulate header included
 #define __X86INTRIN_H
 #endif
-// finally include vectorclass
-#include "vectorclass.h"
 
 
 // Allow the use of floating point permute instructions on integer vectors.
@@ -108,7 +106,9 @@
 #endif // __GNUC__
 #elif INSTRSET == 7
 #include <immintrin.h>                 // AVX
-#elif INSTRSET == 6
+#elif INSTRSET == 6 && __arm64
+#include "sse2neon.h"                  // SSE4.2 by sse2neon
+#elif INSTRSET == 6 && __x86_64__
 #include <nmmintrin.h>                 // SSE4.2
 #elif INSTRSET == 5
 #include <smmintrin.h>                 // SSE4.1
@@ -263,30 +263,40 @@ constexpr int V_DC = -256;
 // input:  functionnumber = leaf (eax), ecxleaf = subleaf(ecx)
 // output: output[0] = eax, output[1] = ebx, output[2] = ecx, output[3] = edx
 static inline void cpuid(int output[4], int functionnumber, int ecxleaf = 0) {
-#if defined(__GNUC__) || defined(__clang__)           // use inline assembly, Gnu/AT&T syntax
-    int a, b, c, d;
-    __asm("cpuid" : "=a"(a), "=b"(b), "=c"(c), "=d"(d) : "a"(functionnumber), "c"(ecxleaf) : );
-    output[0] = a;
-    output[1] = b;
-    output[2] = c;
-    output[3] = d;
-
-#elif defined (_MSC_VER)                              // Microsoft compiler, intrin.h included
-    __cpuidex(output, functionnumber, ecxleaf);       // intrinsic function for CPUID
-
-#else                                                 // unknown platform. try inline assembly with masm/intel syntax
-    __asm {
-        mov eax, functionnumber
-        mov ecx, ecxleaf
-        cpuid;
-        mov esi, output
-        mov[esi], eax
-        mov[esi + 4], ebx
-        mov[esi + 8], ecx
-        mov[esi + 12], edx
-    }
+#if defined(__x86_64__) || defined(_M_X64) || defined(__i386) || defined(_M_IX86)
+    // Original x86/x86_64 implementation
+    #if (defined(__GNUC__) || defined(__clang__)) && defined(__x86_64__)
+        int a, b, c, d;
+        __asm("cpuid" : "=a"(a), "=b"(b), "=c"(c), "=d"(d) : "a"(functionnumber), "c"(ecxleaf) : );
+        output[0] = a;
+        output[1] = b;
+        output[2] = c;
+        output[3] = d;
+    #elif defined (_MSC_VER)
+        __cpuidex(output, functionnumber, ecxleaf);
+    #else
+        __asm {
+            mov eax, functionnumber
+            mov ecx, ecxleaf
+            cpuid;
+            mov esi, output
+            mov[esi], eax
+            mov[esi + 4], ebx
+            mov[esi + 8], ecx
+            mov[esi + 12], edx
+        }
+    #endif
+#elif defined(__aarch64__) || defined(__arm__)
+    // Assume NEON support on ARM
+    output[0] = 1; // Indicating support for SSE
+    output[1] = 1; // Indicating support for SSE2
+    output[2] = 1; // Indicating support for SSE3
+    output[3] = 1; // Indicating support for SSSE3, SSE4.1, SSE4.2
+#else
+    #error Unsupported platform
 #endif
 }
+
 
 
 // Define popcount function. Gives sum of bits

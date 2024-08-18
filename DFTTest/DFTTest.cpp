@@ -32,20 +32,27 @@
 
 using namespace std::literals;
 
-#ifdef DFTTEST_X86
+#if defined(DFTTEST_X86) || defined(__arm__) || defined(__aarch64__)
 #include "VCL2/vectorclass.h"
 
 template<int type> extern void filter_sse2(float * dftc, const float * sigmas, const int ccnt, const float * pmin, const float * pmax, const float * sigmas2) noexcept;
+#if defined(DFTTEST_X86)
 template<int type> extern void filter_avx2(float * dftc, const float * sigmas, const int ccnt, const float * pmin, const float * pmax, const float * sigmas2) noexcept;
 template<int type> extern void filter_avx512(float * dftc, const float * sigmas, const int ccnt, const float * pmin, const float * pmax, const float * sigmas2) noexcept;
+#endif
 
 template<typename pixel_t> extern void func_0_sse2(VSFrameRef * src[3], VSFrameRef * dst, const DFTTestData * const VS_RESTRICT d, const VSAPI * vsapi) noexcept;
+
+#if defined(DFTTEST_X86)
 template<typename pixel_t> extern void func_0_avx2(VSFrameRef * src[3], VSFrameRef * dst, const DFTTestData * const VS_RESTRICT d, const VSAPI * vsapi) noexcept;
 template<typename pixel_t> extern void func_0_avx512(VSFrameRef * src[3], VSFrameRef * dst, const DFTTestData * const VS_RESTRICT d, const VSAPI * vsapi) noexcept;
+#endif
 
 template<typename pixel_t> extern void func_1_sse2(VSFrameRef * src[15][3], VSFrameRef * dst, const int pos, const DFTTestData * const VS_RESTRICT d, const VSAPI * vsapi) noexcept;
+#if defined(DFTTEST_X86)
 template<typename pixel_t> extern void func_1_avx2(VSFrameRef * src[15][3], VSFrameRef * dst, const int pos, const DFTTestData * const VS_RESTRICT d, const VSAPI * vsapi) noexcept;
 template<typename pixel_t> extern void func_1_avx512(VSFrameRef * src[15][3], VSFrameRef * dst, const int pos, const DFTTestData * const VS_RESTRICT d, const VSAPI * vsapi) noexcept;
+#endif
 #endif
 
 #define EXTRA(a,b) (((a) % (b)) ? ((b) - ((a) % (b))) : 0)
@@ -754,7 +761,7 @@ static void VS_CC dfttestCreate(const VSMap * in, VSMap * out, void * userData, 
                 d->func_1 = func_1_c<float>;
             }
 
-#ifdef DFTTEST_X86
+#if defined(DFTTEST_X86)
             const int iset = instrset_detect();
             if ((opt == 0 && iset >= 10) || opt == 4) {
                 if (ftype == 0) {
@@ -841,6 +848,36 @@ static void VS_CC dfttestCreate(const VSMap * in, VSMap * out, void * userData, 
                     d->func_1 = func_1_sse2<float>;
                 }
             }
+#endif
+#if defined(__arm__) || defined(__aarch64__)
+                if (ftype == 0) {
+                    if (std::abs(d->f0beta - 1.0f) < 0.00005f)
+                        d->filterCoeffs = filter_sse2<0>;
+                    else if (std::abs(d->f0beta - 0.5f) < 0.00005f)
+                        d->filterCoeffs = filter_sse2<6>;
+                    else
+                        d->filterCoeffs = filter_sse2<5>;
+                } else if (ftype == 1) {
+                    d->filterCoeffs = filter_sse2<1>;
+                } else if (ftype == 2) {
+                    d->filterCoeffs = filter_sse2<2>;
+                } else if (ftype == 3) {
+                    d->filterCoeffs = filter_sse2<3>;
+                } else {
+                    d->filterCoeffs = filter_sse2<4>;
+                }
+
+                if (d->vi->format->bytesPerSample == 1) {
+                    d->func_0 = func_0_sse2<uint8_t>;
+                    d->func_1 = func_1_sse2<uint8_t>;
+                } else if (d->vi->format->bytesPerSample == 2) {
+                    d->func_0 = func_0_sse2<uint16_t>;
+                    d->func_1 = func_1_sse2<uint16_t>;
+                } else {
+                    d->func_0 = func_0_sse2<float>;
+                    d->func_1 = func_1_sse2<float>;
+                }
+        
 #endif
         }
 

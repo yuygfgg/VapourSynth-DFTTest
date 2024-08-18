@@ -994,12 +994,16 @@ static inline Vec4fb is_nan(Vec4f const a) {
 //static inline Vec4fb is_nan(Vec4f const a) {
 //    return a != a; // not safe with -ffinite-math-only compiler option
 //}
-#elif (defined(__GNUC__) || defined(__clang__)) && !defined(__INTEL_COMPILER)
+#elif (defined(__GNUC__) || defined(__clang__)) && !defined(__INTEL_COMPILER) && !defined(__arm64)
 static inline Vec4fb is_nan(Vec4f const a) {
     __m128 aa = a;
     __m128i unordered;
     __asm volatile("vcmpps $3,  %1, %1, %0" : "=x" (unordered) :  "x" (aa) );
     return Vec4fb(unordered);
+}
+#elif defined(__arm64)
+static inline Vec4fb is_nan(Vec4f const a) {
+    return vmvnq_u32(vceqq_f32(a, a));
 }
 #else
 static inline Vec4fb is_nan(Vec4f const a) {

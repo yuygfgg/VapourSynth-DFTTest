@@ -45,6 +45,7 @@ deps += fftw3f_threads_dep
 libs = []
 
 if host_machine.cpu_family().startswith('x86')
+  message('x86')
   add_project_arguments('-fno-math-errno', '-fno-trapping-math', '-DDFTTEST_X86', '-mfpmath=sse', '-msse2', language: 'cpp')
 
   sources += [
@@ -83,6 +84,35 @@ if host_machine.cpu_family().startswith('x86')
     cpp_args: ['-mavx512f', '-mavx512vl', '-mavx512bw', '-mavx512dq', '-mfma'],
     gnu_symbol_visibility: 'hidden'
   )
+elif host_machine.cpu_family().startswith('arm') or host_machine.cpu_family() == 'aarch64'
+  message('arm')
+  sources += [
+    'DFTTest/DFTTest_SSE2.cpp',
+    'DFTTest/VCL2/instrset.h',
+    'DFTTest/VCL2/sse2neon.h',
+    'DFTTest/VCL2/instrset_detect.cpp',
+    'DFTTest/VCL2/vector_convert.h',
+    'DFTTest/VCL2/vectorclass.h',
+    'DFTTest/VCL2/vectorf128.h',
+    'DFTTest/VCL2/vectorf256.h',
+    'DFTTest/VCL2/vectorf256e.h',
+    'DFTTest/VCL2/vectorf512.h',
+    'DFTTest/VCL2/vectorf512e.h',
+    'DFTTest/VCL2/vectori128.h',
+    'DFTTest/VCL2/vectori256.h',
+    'DFTTest/VCL2/vectori256e.h',
+    'DFTTest/VCL2/vectori512.h',
+    'DFTTest/VCL2/vectori512e.h',
+    'DFTTest/VCL2/vectori512s.h',
+    'DFTTest/VCL2/vectori512se.h',
+    'DFTTest/VCL2/vectormath_common.h',
+    'DFTTest/VCL2/vectormath_exp.h',
+    'DFTTest/VCL2/vectormath_hyp.h',
+    'DFTTest/VCL2/vectormath_lib.h',
+    'DFTTest/VCL2/vectormath_trig.h'
+  ]
+else
+  message('unknown')
 endif
 
 shared_module('dfttest', sources,
@@ -90,5 +120,4 @@ shared_module('dfttest', sources,
   link_with: libs,
   install: true,
   install_dir: join_paths(vapoursynth_dep.get_pkgconfig_variable('libdir'), 'vapoursynth'),
-  gnu_symbol_visibility: 'hidden'
 )
