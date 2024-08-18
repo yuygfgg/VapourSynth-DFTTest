@@ -86,6 +86,8 @@ if host_machine.cpu_family().startswith('x86')
   )
 elif host_machine.cpu_family().startswith('arm') or host_machine.cpu_family() == 'aarch64'
   message('arm')
+  add_project_arguments('-Ofast', '-ftree-vectorize', '-fopenmp', '-fno-math-errno', '-fno-trapping-math', language: 'cpp')
+  
   sources += [
     'DFTTest/DFTTest_SSE2.cpp',
     'DFTTest/VCL2/instrset.h',
